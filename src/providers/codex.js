@@ -67,6 +67,10 @@ export class CodexProvider extends BaseProvider {
   }
 
   async createCompletion({ prompt, model, cwd }) {
+    const selectedModel =
+      model && model !== "default"
+        ? model
+        : this.providerConfig.model || null;
     const args = [
       "exec",
       "--json",
@@ -79,8 +83,17 @@ export class CodexProvider extends BaseProvider {
       prompt
     ];
 
-    if (model && model !== "default") {
-      args.splice(args.length - 1, 0, "-m", model);
+    if (selectedModel) {
+      args.splice(args.length - 1, 0, "-m", selectedModel);
+    }
+
+    if (this.providerConfig.modelReasoningEffort) {
+      args.splice(
+        args.length - 1,
+        0,
+        "-c",
+        `model_reasoning_effort="${this.providerConfig.modelReasoningEffort}"`
+      );
     }
 
     const result = await runCommand(this.providerConfig.command, args, {

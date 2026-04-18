@@ -12,7 +12,9 @@ export const defaultConfig = {
   timeoutMs: Number.parseInt(process.env.AI_PROXY_TIMEOUT_MS || "300000", 10),
   codex: {
     command: process.env.AI_PROXY_CODEX_COMMAND || "codex",
-    sandbox: process.env.AI_PROXY_CODEX_SANDBOX || "read-only"
+    sandbox: process.env.AI_PROXY_CODEX_SANDBOX || "read-only",
+    model: process.env.AI_PROXY_CODEX_MODEL || "gpt-5.4",
+    modelReasoningEffort: process.env.AI_PROXY_CODEX_MODEL_REASONING_EFFORT || "high"
   },
   claude: {
     command: process.env.AI_PROXY_CLAUDE_COMMAND || "claude",
@@ -26,7 +28,7 @@ export const defaultConfig = {
 };
 
 export const advertisedModels = {
-  codex: ["codex:default"],
+  codex: ["codex:default", "codex:gpt-5.4"],
   claude: ["claude:sonnet", "claude:opus"],
   gemini: [
     "gemini:auto",
