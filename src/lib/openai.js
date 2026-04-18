@@ -122,13 +122,14 @@ export function sendSseHeaders(res) {
   });
 }
 
-export function errorPayload(message, type = "invalid_request_error", code = null) {
+export function errorPayload(message, type = "invalid_request_error", code = null, extra = {}) {
   return {
     error: {
       message,
       type,
       param: null,
-      code
+      code,
+      ...extra
     }
   };
 }

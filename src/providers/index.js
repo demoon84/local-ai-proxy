@@ -57,6 +57,26 @@ export function resolveProviderModel(modelId, runtimeConfig, providers) {
   };
 }
 
+export async function listProviderAuthStatuses({ providers, cwd, provider = null }) {
+  const entries = provider ? [[provider, providers[provider]]] : Object.entries(providers);
+
+  return Promise.all(
+    entries
+      .filter(([, adapter]) => Boolean(adapter))
+      .map(async ([, adapter]) => {
+        try {
+          return await adapter.getAuthStatus({ cwd });
+        } catch (error) {
+          return {
+            ...adapter.getAuthInstructions(),
+            state: "unknown",
+            status_text: error.message
+          };
+        }
+      })
+  );
+}
+
 export async function createProviderCompletion({ provider, providerModel, messages, cwd, providers }) {
   const adapter = providers[provider];
   if (!adapter) {

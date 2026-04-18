@@ -4,7 +4,7 @@ import { createConfig } from "./config.js";
 import { errorPayload, createChatCompletion, sendBufferedChatCompletionStream, sendJson, sendSseHeaders } from "./lib/openai.js";
 import { normalizeMessages } from "./lib/prompt.js";
 import { SessionStore } from "./lib/session-store.js";
-import { listModels, resolveProviderModel, createProviderCompletion, createProviders } from "./providers/index.js";
+import { listModels, listProviderAuthStatuses, resolveProviderModel, createProviderCompletion, createProviders } from "./providers/index.js";
 import { ProviderError } from "./providers/base.js";
 
 function readJsonBody(req) {
@@ -34,7 +34,15 @@ function readJsonBody(req) {
 
 function handleError(res, error) {
   if (error instanceof ProviderError) {
-    sendJson(res, error.statusCode, errorPayload(error.message, "provider_error", error.code));
+    const type = error.code === "provider_auth_error" ? "authentication_error" : "provider_error";
+    sendJson(
+      res,
+      error.statusCode,
+      errorPayload(error.message, type, error.code, {
+        provider: error.provider,
+        details: error.details
+      })
+    );
     return;
   }
 
@@ -205,6 +213,30 @@ export function createAiProxyServer(overrides = {}) {
     });
   }
 
+  async function handleAuthProviders(req, res, url) {
+    const requestedProvider = url.searchParams.get("provider");
+    const provider =
+      typeof requestedProvider === "string" && requestedProvider.trim()
+        ? requestedProvider.trim().toLowerCase()
+        : null;
+
+    if (provider && !providers[provider]) {
+      sendJson(res, 400, errorPayload(`Unknown provider: ${provider}`, "invalid_request_error", "unknown_provider"));
+      return;
+    }
+
+    const data = await listProviderAuthStatuses({
+      providers,
+      cwd: runtimeConfig.defaultCwd,
+      provider
+    });
+
+    sendJson(res, 200, {
+      object: "list",
+      data
+    });
+  }
+
   const server = http.createServer(async (req, res) => {
     try {
       if (!req.url) {
@@ -227,6 +259,11 @@ export function createAiProxyServer(overrides = {}) {
           object: "list",
           data: listModels()
         });
+        return;
+      }
+
+      if (req.method === "GET" && (url.pathname === "/auth/providers" || url.pathname === "/v1/auth/providers")) {
+        await handleAuthProviders(req, res, url);
         return;
       }
 

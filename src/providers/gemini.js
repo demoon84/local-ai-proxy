@@ -6,13 +6,56 @@ export class GeminiProvider extends BaseProvider {
     super("gemini", runtimeConfig.gemini, runtimeConfig);
   }
 
+  getAuthInstructions() {
+    return {
+      provider: this.name,
+      state: "needs_login",
+      oauth_supported: true,
+      auth_kind: "google_oauth_or_api_key",
+      login_command: "gemini",
+      status_command: null,
+      docs_url: "https://geminicli.com/docs/get-started/authentication/",
+      instructions: [
+        "Run `gemini` interactively.",
+        "Choose `Sign in with Google` in the authentication prompt.",
+        "Complete the browser flow, then retry the API request."
+      ],
+      alternatives: [
+        "For headless use, set `GEMINI_API_KEY`, or configure Vertex AI credentials."
+      ]
+    };
+  }
+
+  getAuthStatus() {
+    const base = this.getAuthInstructions();
+
+    if (process.env.GEMINI_API_KEY) {
+      return {
+        ...base,
+        state: "authenticated",
+        auth_method: "api_key"
+      };
+    }
+
+    if (fs.existsSync(this.providerConfig.oauthCredsPath)) {
+      return {
+        ...base,
+        state: "authenticated",
+        auth_method: "google_oauth_cached",
+        credentials_path: this.providerConfig.oauthCredsPath
+      };
+    }
+
+    return base;
+  }
+
   hasAuthConfigured() {
-    return Boolean(process.env.GEMINI_API_KEY || fs.existsSync(this.providerConfig.oauthCredsPath));
+    return this.getAuthStatus().state === "authenticated";
   }
 
   async createCompletion({ prompt, model, cwd }) {
     if (!this.hasAuthConfigured()) {
-      throw this.createAuthError("Gemini CLI authentication is not configured.");
+      throw this.createAuthError("Gemini CLI authentication is not configured.", this.getAuthStatus());
     }
 
     const args = [

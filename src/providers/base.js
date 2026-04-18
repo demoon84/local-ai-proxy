@@ -128,12 +128,31 @@ export class BaseProvider {
     this.runtimeConfig = runtimeConfig;
   }
 
+  getAuthInstructions() {
+    return {
+      provider: this.name,
+      state: "unknown",
+      oauth_supported: false,
+      login_command: null,
+      status_command: null,
+      docs_url: null,
+      instructions: []
+    };
+  }
+
+  async getAuthStatus() {
+    return this.getAuthInstructions();
+  }
+
   createAuthError(message, details = null) {
     return new ProviderError(message, {
       statusCode: 401,
       code: "provider_auth_error",
       provider: this.name,
-      details
+      details: {
+        ...this.getAuthInstructions(),
+        ...(details || {})
+      }
     });
   }
 
