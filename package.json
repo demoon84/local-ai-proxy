@@ -30,6 +30,9 @@
     "src",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "start": "node src/cli.js",
     "check": "node --check src/cli.js && node --check src/index.js && node --check src/server.js && node --check src/config.js && node --check src/lib/openai.js && node --check src/lib/prompt.js && node --check src/lib/session-store.js && node --check src/providers/base.js && node --check src/providers/index.js && node --check src/providers/codex.js && node --check src/providers/claude.js && node --check src/providers/gemini.js"

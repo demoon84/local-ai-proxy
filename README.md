@@ -71,6 +71,36 @@ npx local-ai-proxy
 - 로컬 checkout 으로 설치: `npm install -D local-ai-proxy@file:../../local-ai-proxy`
 - 전역 실행이 필요하면: `npm install -g local-ai-proxy`
 
+## Release
+
+이 저장소에는 GitHub Actions 기반 npm trusted publishing 워크플로가 포함되어 있습니다.
+
+워크플로 파일:
+
+- `.github/workflows/publish.yml`
+
+npm 쪽 1회 설정:
+
+1. npm 웹에서 `local-ai-proxy` 패키지의 Trusted publishing 설정으로 이동
+2. Provider 로 `GitHub Actions` 선택
+3. Organization or user: `demoon84`
+4. Repository: `local-ai-proxy`
+5. Workflow file: `.github/workflows/publish.yml`
+
+배포 순서:
+
+1. `package.json`의 버전을 올린다.
+2. 변경사항을 커밋하고 GitHub 기본 브랜치에 푸시한다.
+3. 배포 태그를 만든다. 예: `git tag v0.2.1`
+4. 태그를 푸시한다. 예: `git push origin v0.2.1`
+5. GitHub Actions가 `npm publish`를 실행한다.
+
+안전장치:
+
+- 태그 버전과 `package.json` 버전이 다르면 배포가 실패한다.
+- 워크플로는 `npm run check`가 통과해야 publish 된다.
+- npm trusted publishing 사용 시 provenance 는 npm에서 자동 생성된다.
+
 ## Library Usage
 
 ```js
