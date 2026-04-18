@@ -1,0 +1,8 @@
+node_modules
+.DS_Store
+.local-ai-proxy
+*.tgz
+task_plan.md
+findings.md
+progress.md
+npm-debug.log*
