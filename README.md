@@ -1,184 +1,83 @@
 # local-ai-proxy
 
-로컬에 설치된 `codex`, `claude`, `gemini` CLI를 감싸는 로컬 AI 프록시 패키지입니다.
+`local-ai-proxy` exposes your locally installed `codex`, `claude`, and `gemini` CLIs through a small OpenAI-compatible HTTP server.
 
-OpenAI 호환 `/v1/...` API를 로컬에서 열어, 기존 앱이나 프론트 프로젝트가 same-origin dev proxy 뒤에서 바로 붙을 수 있게 해줍니다.
+It is useful when you want an existing app, local tool, or frontend dev server to talk to local AI agents over a simple HTTP interface instead of shelling out directly.
 
-## Quick Start
+## What It Does
 
-사전 조건:
+- Exposes `GET /v1/models`
+- Exposes `POST /v1/chat/completions`
+- Exposes `GET /auth/providers` for provider login guidance
+- Exposes `POST /chat` for simple bridge-style integrations
+- Persists lightweight file-based sessions for follow-up requests
+- Supports `codex`, `claude`, and `gemini` as backing providers
 
-- Node.js 20+
-- `codex`, `claude`, `gemini` 중 하나 이상이 PATH 에 설치 및 로그인
+## Requirements
 
-바로 실행:
+- Node.js 20 or newer
+- At least one supported CLI installed and available on `PATH`
+- The provider you want to use must already be authenticated locally
 
-```bash
-npx local-ai-proxy
-```
+Examples:
 
-기본 주소:
-
-- `http://127.0.0.1:8787`
-
-프로젝트에 dev dependency 로 설치:
-
-```bash
-npm install -D local-ai-proxy
-```
-
-로컬 checkout 을 직접 붙일 때:
-
-```bash
-npm install -D local-ai-proxy@file:../../local-ai-proxy
-```
-
-기본 용도:
-
-- OpenAI 호환 `/v1/...` API 제공
-- `ez/admin` 같은 프론트 프로젝트에서 same-origin dev proxy 뒤의 로컬 AI bridge로 사용
-
-현재 MVP 범위:
-
-- `/healthz`
-- `/v1/models`
-- `/v1/chat/completions`
-- `/chat` (`ez/admin` 호환 응답 형식)
-- 파일 기반 bridge session 저장
-- OpenAI 스타일 SSE 응답
-
-주의:
-
-- 이 버전의 `stream: true` 는 provider 출력을 내부에서 모두 수집한 뒤 OpenAI SSE 형태로 내보내는 buffered streaming 입니다.
-- 실제 incremental streaming 과 native provider session resume 는 다음 단계 확장 포인트로 남겨두었습니다.
-- provider 인증 상태는 각 CLI 설치/로그인 상태에 의존합니다.
-
-## Start
-
-```bash
-npm start
-```
-
-패키지 형태로는 CLI 또는 라이브러리 둘 다 사용할 수 있습니다.
-
-```bash
-npx local-ai-proxy
-```
+- Codex: `codex login`
+- Claude: `claude auth login`
+- Gemini: sign in through `gemini`, or configure `GEMINI_API_KEY`
 
 ## Install
 
-- npm 공개 패키지로 설치: `npm install -D local-ai-proxy`
-- 로컬 checkout 으로 설치: `npm install -D local-ai-proxy@file:../../local-ai-proxy`
-- 전역 실행이 필요하면: `npm install -g local-ai-proxy`
-
-## Release
-
-이 저장소에는 GitHub Actions 기반 npm trusted publishing 워크플로가 포함되어 있습니다.
-
-워크플로 파일:
-
-- `.github/workflows/publish.yml`
-
-npm 쪽 1회 설정:
-
-1. npm 웹에서 `local-ai-proxy` 패키지의 Trusted publishing 설정으로 이동
-2. Provider 로 `GitHub Actions` 선택
-3. Organization or user: `demoon84`
-4. Repository: `local-ai-proxy`
-5. Workflow file: `.github/workflows/publish.yml`
-
-배포 순서:
-
-1. `package.json`의 버전을 올린다.
-2. 변경사항을 커밋하고 GitHub 기본 브랜치에 푸시한다.
-3. 배포 태그를 만든다. 예: `git tag v0.2.1`
-4. 태그를 푸시한다. 예: `git push origin v0.2.1`
-5. GitHub Actions가 `npm publish`를 실행한다.
-
-안전장치:
-
-- 태그 버전과 `package.json` 버전이 다르면 배포가 실패한다.
-- 워크플로는 `npm run check`가 통과해야 publish 된다.
-- npm trusted publishing 사용 시 provenance 는 npm에서 자동 생성된다.
-
-## Library Usage
-
-```js
-import { createAiProxyServer } from "local-ai-proxy";
-
-const proxy = createAiProxyServer({
-  port: 8787,
-  defaultProvider: "gemini"
-});
-
-await proxy.listen();
-```
-
-종료:
-
-```js
-await proxy.close();
-```
-
-## Environment Variables
-
-- `HOST`: 기본 `127.0.0.1`
-- `PORT`: 기본 `8787`
-- `AI_PROXY_DEFAULT_PROVIDER`: 기본 `gemini`
-- `AI_PROXY_DEFAULT_CWD`: 기본 현재 프로젝트 디렉터리
-- `AI_PROXY_DATA_DIR`: 기본 `./.local-ai-proxy`
-- `AI_PROXY_TIMEOUT_MS`: 기본 `300000`
-- `AI_PROXY_CODEX_SANDBOX`: 기본 `read-only`
-- `AI_PROXY_CODEX_MODEL`: 기본 `gpt-5.4`
-- `AI_PROXY_CODEX_MODEL_REASONING_EFFORT`: 기본 `high`
-- `AI_PROXY_CLAUDE_PERMISSION_MODE`: 기본 `plan`
-- `AI_PROXY_GEMINI_APPROVAL_MODE`: 기본 `plan`
-
-## Model Naming
-
-OpenAI 호환 요청의 `model` 값은 `provider:model` 형식을 권장합니다.
-
-예시:
-
-- `codex:default`
-- `codex:gpt-5.4`
-- `claude:sonnet`
-- `gemini:auto`
-- `gemini:gemini-3-pro-preview`
-- `gemini:gemini-3-flash-preview`
-- `gemini:gemini-3.1-pro-preview`
-
-provider prefix 가 없으면 `AI_PROXY_DEFAULT_PROVIDER` 를 사용합니다.
-
-Codex 는 `codex:default` 요청 시 기본적으로 `gpt-5.4` 와 `high` reasoning effort 를 사용합니다.
-
-## Auth Guidance
-
-세 provider 모두 로그인 상태를 안내할 수 있습니다.
+Run without installing:
 
 ```bash
-curl http://127.0.0.1:8787/auth/providers
+npx local-ai-proxy
 ```
 
-특정 provider 만 확인:
+Install in a project:
 
 ```bash
-curl 'http://127.0.0.1:8787/auth/providers?provider=claude'
+npm install local-ai-proxy
 ```
 
-현재 안내 기준:
+Install globally:
 
-- Codex: `codex login` 또는 첫 `codex` 실행 시 ChatGPT 로그인
-- Claude: `claude auth login`
-- Gemini: `gemini` 실행 후 `Sign in with Google` 선택
+```bash
+npm install -g local-ai-proxy
+```
 
-인증이 안 된 상태에서 요청하면 `401 provider_auth_error` 와 함께 provider별 로그인 명령, 문서 URL, 다음 단계가 같이 반환됩니다.
+## Quick Start
 
-## Example
+Start the server:
+
+```bash
+npx local-ai-proxy
+```
+
+Default address:
+
+```text
+http://127.0.0.1:8787
+```
+
+Choose a different default provider:
+
+```bash
+npx local-ai-proxy --default-provider codex
+```
+
+Check health:
+
+```bash
+curl http://127.0.0.1:8787/healthz
+```
+
+List advertised models:
 
 ```bash
 curl http://127.0.0.1:8787/v1/models
 ```
+
+## OpenAI-Compatible Example
 
 ```bash
 curl http://127.0.0.1:8787/v1/chat/completions \
@@ -191,7 +90,7 @@ curl http://127.0.0.1:8787/v1/chat/completions \
   }'
 ```
 
-session continuity 가 필요하면 custom field `session_id` 를 함께 보낼 수 있습니다.
+Example with session continuity:
 
 ```bash
 curl http://127.0.0.1:8787/v1/chat/completions \
@@ -205,49 +104,162 @@ curl http://127.0.0.1:8787/v1/chat/completions \
   }'
 ```
 
-## Notes
+## Bridge Endpoint
 
-- Claude 는 먼저 `claude auth login` 으로 OAuth 로그인을 완료해야 합니다.
-- Gemini headless mode 는 cached auth 또는 `GEMINI_API_KEY` / Vertex AI 구성이 필요합니다.
-- Gemini 3 계열은 현재 `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview` 이름으로 광고합니다.
-- Codex CLI 는 현재 환경에 따라 warning 로그를 stdout 으로 섞어 출력할 수 있어, 브리지는 JSON line 만 추려서 처리합니다.
+For apps that expect a simpler bridge response shape, use `POST /chat`.
 
-## ez/admin Integration
-
-`ez/admin` 같이 기존 프론트 앱이 `/api/codex/chat` 같은 same-origin 경로를 기대하면, 이 패키지를 별도 로컬 프로세스로 띄우고 dev-server proxy로 `/chat`에 연결하는 방식이 가장 자연스럽습니다.
-
-예시:
+Example:
 
 ```bash
-local-ai-proxy --port 8787
+curl http://127.0.0.1:8787/chat \
+  -H 'content-type: application/json' \
+  -d '{
+    "provider": "codex",
+    "messages": [
+      {
+        "role": "user",
+        "text": "Summarize this repository in one sentence."
+      }
+    ]
+  }'
 ```
 
-`ez/admin` 기준 추천 연결 방식:
+## Routes
 
-```json
-{
-  "devDependencies": {
-    "local-ai-proxy": "file:../../local-ai-proxy"
-  },
-  "scripts": {
-    "serve:local-ai": "local-ai-proxy --port 8787"
-  }
-}
+- `GET /healthz`
+- `GET /v1/models`
+- `GET /auth/providers`
+- `GET /v1/auth/providers`
+- `POST /v1/chat/completions`
+- `POST /chat`
+
+## CLI Options
+
+```text
+local-ai-proxy [options]
+
+--host <host>                   Host to listen on
+--port <port>                   Port to listen on
+--default-provider <provider>   Default provider (codex|claude|gemini)
+--data-dir <path>               Session data directory
+--help                          Show this help
 ```
 
-실행 순서:
+## Library Usage
 
-1. `npm install`
-2. `npm run serve:local-ai`
-3. `npm run serve:admin`
+```js
+import { createAiProxyServer } from "local-ai-proxy";
 
-프론트 dev-server:
+const proxy = createAiProxyServer({
+  port: 8787,
+  defaultProvider: "gemini"
+});
 
-- `/api/codex/chat` -> `http://127.0.0.1:8787/chat`
+await proxy.listen();
 
-이 방식의 장점:
+console.log(`Listening on http://${proxy.config.host}:${proxy.config.port}`);
+```
 
-- 프론트 번들에 Node 런타임 의존성을 넣지 않아도 된다.
-- Codex/Claude/Gemini 전환을 환경 변수와 모델명으로 처리할 수 있다.
-- 나중에 npm registry/private registry 배포로 바꾸기 쉽다.
-- 실제 `ez/admin` 이식 검증 기준으로도 `/api/codex/chat` 경유로 `codex`, `claude`, `gemini` 호출이 모두 정상 동작했다.
+Close the server:
+
+```js
+await proxy.close();
+```
+
+You can also start it directly:
+
+```js
+import { startAiProxyServer } from "local-ai-proxy";
+
+const proxy = await startAiProxyServer({
+  defaultProvider: "codex"
+});
+```
+
+## Model Naming
+
+Model IDs are advertised as `provider:model`.
+
+Examples:
+
+- `codex:default`
+- `codex:gpt-5.4`
+- `claude:sonnet`
+- `claude:opus`
+- `gemini:auto`
+- `gemini:gemini-3-pro-preview`
+- `gemini:gemini-3-flash-preview`
+- `gemini:gemini-3.1-pro-preview`
+- `gemini:gemini-2.5-pro`
+- `gemini:gemini-2.5-flash`
+
+If you omit the provider prefix, the server uses `AI_PROXY_DEFAULT_PROVIDER`.
+
+## Authentication Endpoint
+
+You can inspect provider authentication state and login instructions with:
+
+```bash
+curl http://127.0.0.1:8787/auth/providers
+```
+
+Or for a single provider:
+
+```bash
+curl 'http://127.0.0.1:8787/auth/providers?provider=claude'
+```
+
+When a provider is not authenticated, the proxy returns a `401` error with provider-specific guidance such as:
+
+- login command
+- status command when available
+- docs URL
+- suggested next steps
+
+## Environment Variables
+
+- `HOST`: listen host, default `127.0.0.1`
+- `PORT`: listen port, default `8787`
+- `AI_PROXY_DEFAULT_PROVIDER`: default provider, default `gemini`
+- `AI_PROXY_DEFAULT_CWD`: default working directory for provider commands
+- `AI_PROXY_DATA_DIR`: session storage directory, default `./.local-ai-proxy`
+- `AI_PROXY_TIMEOUT_MS`: provider timeout in milliseconds, default `300000`
+- `AI_PROXY_CODEX_COMMAND`: override the Codex CLI command
+- `AI_PROXY_CODEX_SANDBOX`: Codex sandbox mode, default `read-only`
+- `AI_PROXY_CODEX_MODEL`: Codex default model, default `gpt-5.4`
+- `AI_PROXY_CODEX_MODEL_REASONING_EFFORT`: Codex reasoning effort, default `high`
+- `AI_PROXY_CLAUDE_COMMAND`: override the Claude CLI command
+- `AI_PROXY_CLAUDE_PERMISSION_MODE`: Claude permission mode, default `plan`
+- `AI_PROXY_GEMINI_COMMAND`: override the Gemini CLI command
+- `AI_PROXY_GEMINI_APPROVAL_MODE`: Gemini approval mode, default `plan`
+
+## Frontend Dev Proxy Use
+
+This package works well as a local sidecar process behind a frontend dev proxy.
+
+Typical setup:
+
+1. Run `local-ai-proxy --port 8787`
+2. Configure your frontend dev server to proxy a local route to `http://127.0.0.1:8787`
+3. Keep your app talking to a same-origin path such as `/api/codex/chat`
+
+Example mapping:
+
+```text
+/api/codex/chat -> http://127.0.0.1:8787/chat
+```
+
+## Current Limitations
+
+- `stream: true` currently uses buffered streaming, not true incremental provider streaming
+- Message content is currently text-focused
+- Sessions are stored on the local filesystem
+- Provider behavior depends on the installed CLI versions and local auth state
+
+## Development
+
+Run the syntax checks used by the release workflow:
+
+```bash
+npm run check
+```
