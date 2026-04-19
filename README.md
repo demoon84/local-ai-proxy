@@ -133,6 +133,30 @@ curl http://127.0.0.1:8787/chat \
 - `POST /v1/chat/completions`
 - `POST /chat`
 
+## Per-request Overrides
+
+`POST /v1/chat/completions` accepts optional fields that unlock skills needing write access:
+
+```json
+{
+  "model": "claude:sonnet",
+  "messages": [],
+  "permission_mode": "acceptEdits",
+  "sandbox": "workspace-write",
+  "approval_mode": "auto",
+  "add_dir": ["/extra/path"]
+}
+```
+
+- `permission_mode` — Claude only (`default|plan|acceptEdits|bypassPermissions|dontAsk|delegate`)
+- `sandbox` — Codex only (`read-only|workspace-write|danger-full-access`)
+- `approval_mode` — Gemini only
+- `add_dir` — applied to all three providers
+
+## Skills
+
+Skills (Claude / Codex / Gemini agent-skills format) are managed in a separate repository (e.g. [`mySkills`](../mySkills)) rather than here. The proxy's job is to forward `permission_mode` / `sandbox` / `approval_mode` / `add_dir` so installed skills can actually run — see **Per-request Overrides** above.
+
 ## CLI Options
 
 ```text

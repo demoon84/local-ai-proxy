@@ -58,18 +58,27 @@ export class ClaudeProvider extends BaseProvider {
     }
   }
 
-  async createCompletion({ prompt, model, cwd }) {
+  async createCompletion({ prompt, model, cwd, permissionMode, addDir }) {
+    const effectivePermissionMode = permissionMode || this.providerConfig.permissionMode;
     const args = [
       "-p",
       prompt,
       "--output-format",
       "json",
       "--permission-mode",
-      this.providerConfig.permissionMode
+      effectivePermissionMode
     ];
 
     if (model) {
       args.push("--model", model);
+    }
+
+    if (Array.isArray(addDir)) {
+      for (const dir of addDir) {
+        if (typeof dir === "string" && dir.trim()) {
+          args.push("--add-dir", dir);
+        }
+      }
     }
 
     const result = await runCommand(this.providerConfig.command, args, {

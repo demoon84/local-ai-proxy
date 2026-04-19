@@ -77,7 +77,14 @@ export async function listProviderAuthStatuses({ providers, cwd, provider = null
   );
 }
 
-export async function createProviderCompletion({ provider, providerModel, messages, cwd, providers }) {
+export async function createProviderCompletion({
+  provider,
+  providerModel,
+  messages,
+  cwd,
+  providers,
+  overrides = {}
+}) {
   const adapter = providers[provider];
   if (!adapter) {
     throw new ProviderError(`Unsupported provider: ${provider}`, {
@@ -91,6 +98,10 @@ export async function createProviderCompletion({ provider, providerModel, messag
   return adapter.createCompletion({
     prompt,
     model: providerModel,
-    cwd
+    cwd,
+    permissionMode: overrides.permissionMode,
+    sandbox: overrides.sandbox,
+    approvalMode: overrides.approvalMode,
+    addDir: overrides.addDir
   });
 }

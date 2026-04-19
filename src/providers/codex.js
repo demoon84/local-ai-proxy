@@ -66,11 +66,12 @@ export class CodexProvider extends BaseProvider {
     }
   }
 
-  async createCompletion({ prompt, model, cwd }) {
+  async createCompletion({ prompt, model, cwd, sandbox, addDir }) {
     const selectedModel =
       model && model !== "default"
         ? model
         : this.providerConfig.model || null;
+    const effectiveSandbox = sandbox || this.providerConfig.sandbox;
     const args = [
       "exec",
       "--json",
@@ -79,7 +80,7 @@ export class CodexProvider extends BaseProvider {
       "-C",
       cwd,
       "-s",
-      this.providerConfig.sandbox,
+      effectiveSandbox,
       prompt
     ];
 
@@ -94,6 +95,14 @@ export class CodexProvider extends BaseProvider {
         "-c",
         `model_reasoning_effort="${this.providerConfig.modelReasoningEffort}"`
       );
+    }
+
+    if (Array.isArray(addDir)) {
+      for (const dir of addDir) {
+        if (typeof dir === "string" && dir.trim()) {
+          args.splice(args.length - 1, 0, "--add-dir", dir);
+        }
+      }
     }
 
     const result = await runCommand(this.providerConfig.command, args, {

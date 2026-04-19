@@ -53,22 +53,31 @@ export class GeminiProvider extends BaseProvider {
     return this.getAuthStatus().state === "authenticated";
   }
 
-  async createCompletion({ prompt, model, cwd }) {
+  async createCompletion({ prompt, model, cwd, approvalMode, addDir }) {
     if (!this.hasAuthConfigured()) {
       throw this.createAuthError("Gemini CLI authentication is not configured.", this.getAuthStatus());
     }
 
+    const effectiveApprovalMode = approvalMode || this.providerConfig.approvalMode;
     const args = [
       "-p",
       prompt,
       "--output-format",
       "json",
       "--approval-mode",
-      this.providerConfig.approvalMode
+      effectiveApprovalMode
     ];
 
     if (model) {
       args.push("--model", model);
+    }
+
+    if (Array.isArray(addDir)) {
+      for (const dir of addDir) {
+        if (typeof dir === "string" && dir.trim()) {
+          args.push("--include-directories", dir);
+        }
+      }
     }
 
     const result = await runCommand(this.providerConfig.command, args, {

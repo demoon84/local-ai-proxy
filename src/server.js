@@ -78,6 +78,31 @@ function buildAttachmentSummary(attachments = []) {
   return lines.length ? `Attachments:\n${lines.join("\n")}` : "";
 }
 
+function extractProviderOverrides(body = {}) {
+  const overrides = {};
+
+  if (typeof body.permission_mode === "string" && body.permission_mode.trim()) {
+    overrides.permissionMode = body.permission_mode.trim();
+  }
+  if (typeof body.sandbox === "string" && body.sandbox.trim()) {
+    overrides.sandbox = body.sandbox.trim();
+  }
+  if (typeof body.approval_mode === "string" && body.approval_mode.trim()) {
+    overrides.approvalMode = body.approval_mode.trim();
+  }
+
+  if (Array.isArray(body.add_dir)) {
+    const dirs = body.add_dir.filter((entry) => typeof entry === "string" && entry.trim());
+    if (dirs.length) {
+      overrides.addDir = dirs.map((entry) => entry.trim());
+    }
+  } else if (typeof body.add_dir === "string" && body.add_dir.trim()) {
+    overrides.addDir = [body.add_dir.trim()];
+  }
+
+  return overrides;
+}
+
 function normalizeBridgeMessages(messages = [], systemInstruction = "") {
   const normalized = [];
 
@@ -146,7 +171,8 @@ export function createAiProxyServer(overrides = {}) {
       providerModel,
       messages: session.messages,
       cwd,
-      providers
+      providers,
+      overrides: extractProviderOverrides(body)
     });
 
     sessionStore.completeSession(
